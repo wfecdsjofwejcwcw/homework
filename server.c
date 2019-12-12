@@ -56,16 +56,16 @@ int main()	{
 	printf("initialize...\n");
 
 	while(1) {
-		
+
 		length = sizeof(cli_addr);
-		
+
 		for(i=0; i<MAXMEM; i++) {
-		
+
 			if(connfd[i]==-1) {
 				break;
 			}
 		}
-		
+
 		printf("receiving...\n");
 		connfd[i] = accept(listenfd, (struct sockaddr*)&cli_addr, &length);
 
@@ -99,9 +99,11 @@ void rcv_snd(int n)	{
 	char who[1024];
 	char name[NAMELEN];
 	char msg[1024];
-	char result[] = "YOU WIN!\n";
+	char wresult[] = "YOU WIN!\n";
+	char lresult[] = "YOU LOSE!\n";
+	char even[] = "EVEN\n";
 
-	int i=0;
+	int i = 0;
 	int retval;
 
 	//獲得client的名字
@@ -118,7 +120,7 @@ void rcv_snd(int n)	{
 	strcpy(notify, name);
 	strcat(notify, " join\n");
 	for(i = 0; i < MAXMEM; i++) {
-		
+
 		if(connfd[i] != -1)
 			send(connfd[i], notify, strlen(notify), 0);
 	}
@@ -133,8 +135,8 @@ void rcv_snd(int n)	{
 
 			recvbuf[length]=0;
 
-			if(strcmp("/quit", recvbuf) == 0) {
-			
+			if(strncmp("/quit", recvbuf, 5) == 0) {
+
 				close(connfd[n]);
 				connfd[n]=-1;
 				pthread_exit(&retval);
@@ -169,127 +171,143 @@ void rcv_snd(int n)	{
 						break;
 				}
 
-				int p1 = n; //O
-				int p2 = i; //X
+				memset(msg, 0, sizeof(msg));
+				memset(msg, 0, sizeof(recvbuf));
 
-				int turn = 1;
+				strcpy(msg, "YES or NO\n");
+				send(connfd[i], msg, strlen(msg), 0);
+				recv(connfd[i], recvbuf, 1024, 0);
 
-				strcpy(sendbuf, "START, You are p2(X)\n");
-				send(connfd[p2], sendbuf, strlen(sendbuf)+1, 0);
+				if(strncmp("YES", recvbuf, 3) == 0)	{
 
-				memset(sendbuf, 0, sizeof(sendbuf));
+					int p1 = n; //O
+					int p2 = i; //X
 
-				strcpy(sendbuf, "START, You are p1(O)\n");
-				send(connfd[p1], sendbuf, strlen(sendbuf)+1, 0);
+					int turn = 1;
 
-				char bd[3][3];
-				int flag[10] = {0};
-				int j, k;
-				for(j = 0; j < 3; j++)	{
-					for(k = 0; k < 3; k++)
-						bd[j][k] = '*';
-				}
+					strcpy(sendbuf, "START, You are p2(X)\n");
+					send(connfd[p2], sendbuf, strlen(sendbuf)+1, 0);
 
-				int cnt = 0;
-				int x1, y1, x2, y2;
-				char cur;
-				while(cnt++ < 9)	{
+					memset(sendbuf, 0, sizeof(sendbuf));
 
-					if(turn == 1)	{
+					strcpy(sendbuf, "START, You are p1(O)\n");
+					send(connfd[p1], sendbuf, strlen(sendbuf)+1, 0);
 
-						cur = 'O';
-						memset(recvbuf, 0, sizeof(recvbuf));
-						memset(msg, 0, sizeof(msg));
-
-						strcpy(msg, "YOUR TURN\n");
-
-						while(1)	{
-							if(send(connfd[p1], msg, strlen(msg), 0) > 0)
-								break;
-						}
-
-						while(1)	{
-							if(recv(connfd[p1], recvbuf, 1024, 0) > 0)
-								break;
-						}
-
-						int r = atoi(recvbuf);
-						x1 = r / 10;
-						y1 = r % 10;
-
-						bd[x1][y1] = 'O';
-						turn = 2;
-					}
-
-					else if(turn == 2)	{
-
-						cur = 'X';
-						memset(recvbuf, 0, sizeof(recvbuf));
-
-						while(1)	{
-							if(send(connfd[p2], msg, strlen(msg), 0) > 0)
-								break;
-						}
-
-						while(1)	{
-							if(recv(connfd[p2], recvbuf, 1024, 0)>0)
-								break;
-						}
-
-						int r = atoi(recvbuf);
-						x2 = r / 10;
-						y2 = r % 10;
-
-						bd[x2][y2] = 'X';
-						turn = 1;
-					}
-
-					if(bd[0][0] == cur && bd[1][1] == cur && bd[2][2] == cur)
-						win = cur;
-
-					if(bd[0][2] == cur && bd[1][1] == cur && bd[2][0] == cur)
-						win = cur;
-					
-					int row;
-					for(row = 0; row < 3; row++)	{
-
-						if(bd[0][row] == cur && bd[1][row] == cur && bd[2][row] == cur)	{
-							win = cur;
-							break;
-						}
-					}
-
-					int col;
-					for(col = 0; col < 3; col++)	{
-
-						if(bd[col][0] == cur && bd[col][1] == cur && bd[col][2] == cur)	{
-							win = cur;
-							break;
-						}
-					}
-
+					char bd[3][3];
+					int flag[10] = {0};
+					int j, k;
 					for(j = 0; j < 3; j++)	{
 						for(k = 0; k < 3; k++)
-							printf("%c ", bd[j][k]);
+							bd[j][k] = '*';
+					}
+
+					int cnt = 0;
+					int x1, y1, x2, y2;
+					char cur;
+					while(cnt++ < 9)	{
+
+						if(turn == 1)	{
+
+							cur = 'O';
+							memset(recvbuf, 0, sizeof(recvbuf));
+							memset(msg, 0, sizeof(msg));
+
+							strcpy(msg, "YOUR TURN\n");
+
+							while(1)	{
+								if(send(connfd[p1], msg, strlen(msg), 0) > 0)
+									break;
+							}
+
+							while(1)	{
+								if(recv(connfd[p1], recvbuf, 1024, 0) > 0)
+									break;
+							}
+
+							int r = atoi(recvbuf);
+							x1 = r / 10;
+							y1 = r % 10;
+
+							bd[x1][y1] = 'O';
+							turn = 2;
+						}
+
+						else if(turn == 2)	{
+
+							cur = 'X';
+							memset(recvbuf, 0, sizeof(recvbuf));
+
+							while(1)	{
+								if(send(connfd[p2], msg, strlen(msg), 0) > 0)
+									break;
+							}
+
+							while(1)	{
+								if(recv(connfd[p2], recvbuf, 1024, 0)>0)
+									break;
+							}
+
+							int r = atoi(recvbuf);
+							x2 = r / 10;
+							y2 = r % 10;
+
+							bd[x2][y2] = 'X';
+							turn = 1;
+						}
+
+						if(bd[0][0] == cur && bd[1][1] == cur && bd[2][2] == cur)
+							win = cur;
+
+						if(bd[0][2] == cur && bd[1][1] == cur && bd[2][0] == cur)
+							win = cur;
+
+						int row;
+						for(row = 0; row < 3; row++)	{
+
+							if(bd[0][row] == cur && bd[1][row] == cur && bd[2][row] == cur)	{
+								win = cur;
+								break;
+							}
+						}
+
+						int col;
+						for(col = 0; col < 3; col++)	{
+
+							if(bd[col][0] == cur && bd[col][1] == cur && bd[col][2] == cur)	{
+								win = cur;
+								break;
+							}
+						}
+
+						for(j = 0; j < 3; j++)	{
+							for(k = 0; k < 3; k++)
+								printf("%c ", bd[j][k]);
+							printf("\n");
+						}
+
 						printf("\n");
+
+						if(win == 'O')	{
+
+							send(connfd[p1], wresult, strlen(wresult), 0);
+							send(connfd[p2], lresult, strlen(lresult), 0);
+							break;
+						}
+
+						else if(win == 'X')	{
+
+							send(connfd[p1], wresult, strlen(wresult), 0);
+							send(connfd[p2], lresult, strlen(lresult), 0);
+							break;
+						}
+
+						else if(cnt == 9)	{
+
+							send(connfd[p1], even, strlen(even), 0);
+							send(connfd[p2], even, strlen(even), 0);
+							break;
+						}
 					}
-
-					printf("\n");
-
-					if(win == 'O')	{
-
-						send(connfd[p1], result, strlen(result), 0);
-						break;
-					}
-
-					else if(win == 'X')	{
-
-						send(connfd[p2], result, strlen(result), 0);
-						break;
-					}
-
-					else if(cnt == 9)
-						break;
 				}
 			}
 
